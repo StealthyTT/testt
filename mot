@@ -1,111 +1,202 @@
 blueprint:
-  name: 1 Binary Sensor with Multiple Lights Control and Toggle Logic (No Helpers with Custom Times)
-  description: |
-    Turns on multiple lights when the binary sensor detects motion, disables the automation if any of the lights is toggled off and on twice within a short time,
-    and re-enables it if any of the lights has been off for a configurable amount of time. This version allows you to set the reset time and the light-off duration without helpers, and does not use a timer.
+  name: "Multiple Motion Sensors Control Lights (Max 5)"
+  description: "Turn on and off multiple lights based on different motion sensors, with optional delays."
   domain: automation
   input:
-    binary_sensor:
-      name: Binary Sensor
-      description: The binary sensor to detect changes in state.
+    motion_sensors:
+      name: "Motion Sensors and Lights"
+      description: "Map motion sensors to their corresponding lights (max 5)."
       selector:
-        entity:
-          domain: binary_sensor
-    light_entities:
-      name: Light Entities
-      description: The lights to control.
-      selector:
-        target:
-          entity:
-            domain: light
-    reset_time_duration:
-      name: Reset Time Duration
-      description: Time in minutes to wait before re-enabling the automation after it has been toggled off twice.
-      default: 2
+        object:
+          motion_sensor_1:
+            name: "Motion Sensor 1"
+            description: "First motion sensor."
+            selector:
+              entity:
+                domain: binary_sensor
+          light_1:
+            name: "Light 1"
+            description: "First light to control."
+            selector:
+              entity:
+                domain: light
+          motion_sensor_2:
+            name: "Motion Sensor 2"
+            description: "Second motion sensor."
+            selector:
+              entity:
+                domain: binary_sensor
+          light_2:
+            name: "Light 2"
+            description: "Second light to control."
+            selector:
+              entity:
+                domain: light
+          motion_sensor_3:
+            name: "Motion Sensor 3"
+            description: "Third motion sensor."
+            selector:
+              entity:
+                domain: binary_sensor
+          light_3:
+            name: "Light 3"
+            description: "Third light to control."
+            selector:
+              entity:
+                domain: light
+          motion_sensor_4:
+            name: "Motion Sensor 4"
+            description: "Fourth motion sensor."
+            selector:
+              entity:
+                domain: binary_sensor
+          light_4:
+            name: "Light 4"
+            description: "Fourth light to control."
+            selector:
+              entity:
+                domain: light
+          motion_sensor_5:
+            name: "Motion Sensor 5"
+            description: "Fifth motion sensor."
+            selector:
+              entity:
+                domain: binary_sensor
+          light_5:
+            name: "Light 5"
+            description: "Fifth light to control."
+            selector:
+              entity:
+                domain: light
+    delay_off:
+      name: "Delay Off (seconds)"
+      description: "How long to keep the light on after motion is no longer detected."
+      default: 10
       selector:
         number:
           min: 1
-          max: 60
-          unit_of_measurement: "minutes"
-    off_state_duration:
-      name: Off State Duration
-      description: Time in minutes that the light should be off before automation is re-enabled.
-      default: 5
-      selector:
-        number:
-          min: 1
-          max: 60
-          unit_of_measurement: "minutes"
+          max: 600
+          unit_of_measurement: "seconds"
+          step: 1
 
-variables:
-  toggle_count: 0
-  automation_enabled: true
-  reset_time_duration: "{{ reset_time_duration }}"  # Duration in minutes (set by user)
-  off_state_duration: "{{ off_state_duration }}"  # Duration in minutes (set by user)
-
-# Triggers (top level)
 trigger:
   - platform: state
-    entity_id: !input 'binary_sensor'
-    to: "on"
+    entity_id: !input motion_sensors.motion_sensor_1
+    to: 'on'
   - platform: state
-    entity_id: !input 'light_entities'
-    to: "off"
-    for:
-      minutes: "{{ off_state_duration }}"  # Light has been off for the specified duration (in minutes)
+    entity_id: !input motion_sensors.motion_sensor_2
+    to: 'on'
+  - platform: state
+    entity_id: !input motion_sensors.motion_sensor_3
+    to: 'on'
+  - platform: state
+    entity_id: !input motion_sensors.motion_sensor_4
+    to: 'on'
+  - platform: state
+    entity_id: !input motion_sensors.motion_sensor_5
+    to: 'on'
 
-# Conditions (only proceed if automation is enabled)
-condition:
-  - condition: template
-    value_template: "{{ automation_enabled == true }}"
-
-# Actions (responding to triggers)
 action:
-  # Action triggered by motion detection (turns on multiple lights)
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input 'binary_sensor'
-            state: "on"
+            entity_id: !input motion_sensors.motion_sensor_1
+            state: 'on'
         sequence:
-          # Turn on all lights selected in the light_entities list
           - service: light.turn_on
             target:
-              entity_id: !input 'light_entities'
-          - variables:
-              toggle_count: 0  # Reset toggle count when motion is detected
+              entity_id: !input motion_sensors.light_1
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensors.motion_sensor_2
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input motion_sensors.light_2
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensors.motion_sensor_3
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input motion_sensors.light_3
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensors.motion_sensor_4
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input motion_sensors.light_4
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensors.motion_sensor_5
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input motion_sensors.light_5
 
-  # Action triggered when any of the lights turns off (track toggles)
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input motion_sensors.motion_sensor_1
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensors.motion_sensor_2
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensors.motion_sensor_3
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensors.motion_sensor_4
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensors.motion_sensor_5
+        to: 'off'
+    timeout: '00:{{ input.delay_off }}:00'
+
+  - delay: '00:{{ input.delay_off }}:00'
+
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input 'light_entities'
-            state: "off"
+            entity_id: !input motion_sensors.motion_sensor_1
+            state: 'off'
         sequence:
-          - variables:
-              toggle_count: "{{ toggle_count + 1 }}"  # Increment toggle count when any light turns off
-          - choose:
-              # If toggled off and on twice, disable automation
-              - conditions:
-                  - condition: template
-                    value_template: "{{ toggle_count >= 2 }}"
-                sequence:
-                  - variables:
-                      automation_enabled: false  # Disable automation
-                  - delay: "{{ reset_time_duration * 60 }}"  # Wait for reset time in seconds
-                  - variables:
-                      automation_enabled: true  # Re-enable automation
-
-  # Reset toggle count after inactivity (reset after the light has been off)
-  - choose:
+          - service: light.turn_off
+            target:
+              entity_id: !input motion_sensors.light_1
       - conditions:
           - condition: state
-            entity_id: !input 'light_entities'
-            state: "off"
-            for:
-              minutes: "{{ off_state_duration }}"  # Wait for the light to be off for the specified time
+            entity_id: !input motion_sensors.motion_sensor_2
+            state: 'off'
         sequence:
-          - variables:
-              toggle_count: 0  # Reset toggle count when the light has been off for the duration
-          - variables:
-              automation_enabled: true  # Re-enable automation after the light has been off for the specified duration
+          - service: light.turn_off
+            target:
+              entity_id: !input motion_sensors.light_2
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensors.motion_sensor_3
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input motion_sensors.light_3
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensors.motion_sensor_4
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input motion_sensors.light_4
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensors.motion_sensor_5
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input motion

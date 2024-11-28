@@ -1,5 +1,5 @@
 blueprint:
-  name: "Multiple Motion Sensors Control Lights (Max 5)"
+  name: "aMultiple Motion Sensors Control Lights (Max 5)"
   description: "Turn on and off multiple lights based on different motion sensors, with optional delays."
   domain: automation
   input:
@@ -164,20 +164,4 @@ action:
 
   - choose:
       - conditions:
-          - condition: state
-            entity_id: !input motion_sensor_1
-            state: 'off'
-        sequence:
-          - service: light.turn_off
-            target:
-              entity_id: !input light_1
-      - conditions:
-          - condition: state
-            entity_id: !input motion_sensor_2
-            state: 'off'
-        sequence:
-          - service: light.turn_off
-            target:
-              entity_id: !input light_2
-      - conditions:
-          
+          - con

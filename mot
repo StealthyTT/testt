@@ -27,10 +27,10 @@ blueprint:
 variables:
   toggle_count: 0
   automation_enabled: true
-  light_off_for_5min: false
   reset_time_duration: 2  # Set the reset time duration (in minutes)
   off_state_duration: 5  # Set the off state duration (in minutes)
 
+# Triggers (at top level)
 trigger:
   - platform: state
     entity_id: !input 'binary_sensor'
@@ -41,12 +41,14 @@ trigger:
     for:
       minutes: "{{ off_state_duration }}"  # Light has been off for the specified duration (in minutes)
 
+# Conditions (only proceed if the automation is enabled)
 condition:
   - condition: template
-    value_template: "{{ automation_enabled == true }}"  # Only proceed if automation is enabled
+    value_template: "{{ automation_enabled == true }}"
 
+# Actions (actions that respond to triggers)
 action:
-  # Action triggered by motion sensor detecting motion
+  # Action triggered when motion is detected (light turns on)
   - choose:
       - conditions:
           - condition: state
@@ -58,12 +60,11 @@ action:
               entity_id: !input 'light_entity'
           - variables:
               toggle_count: 0  # Reset toggle count when motion is detected
-              light_off_for_5min: false  # Reset the light off timer status
           - service: timer.start
             target:
               entity_id: !input 'motion_reset_timer'  # Start/reset the motion reset timer
 
-  # Action when the light turns off to track the toggles
+  # Action triggered when the light turns off (track toggles)
   - choose:
       - conditions:
           - condition: state
@@ -71,21 +72,23 @@ action:
             state: "off"
         sequence:
           - variables:
-              toggle_count: "{{ toggle_count + 1 }}"
+              toggle_count: "{{ toggle_count + 1 }}"  # Increment toggle count when light turns off
           - service: timer.start
             target:
               entity_id: !input 'motion_reset_timer'  # Reset the timer
-          - if:
-              condition: template
-              value_template: "{{ toggle_count >= 2 }}"  # If toggled off and on twice
-            then:
-              - variables:
-                  automation_enabled: false  # Disable automation
-              - delay: "{{ reset_time_duration * 60 }}"  # Wait for the reset time in seconds
-              - variables:
-                  automation_enabled: true  # Re-enable automation
+          - choose:
+              # If toggled off and on twice, disable automation
+              - conditions:
+                  - condition: template
+                    value_template: "{{ toggle_count >= 2 }}"
+                sequence:
+                  - variables:
+                      automation_enabled: false  # Disable automation
+                  - delay: "{{ reset_time_duration * 60 }}"  # Wait for reset time in seconds
+                  - variables:
+                      automation_enabled: true  # Re-enable automation
 
-  # Reset the toggle count if no motion is detected within the reset timer period
+  # Reset toggle count after inactivity (reset after the timer is idle)
   - alias: Reset toggle count if no action after reset time
     trigger:
       - platform: state

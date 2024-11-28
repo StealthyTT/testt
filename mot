@@ -80,7 +80,7 @@ action:
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input 'light_entities'
+            entity_id: "{{ entity }}"
             state: "off"
         sequence:
           - variables:
@@ -101,7 +101,7 @@ action:
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input 'light_entities'
+            entity_id: "{{ light_entity }}"
             state: "off"
             for:
               minutes: "{{ off_state_duration }}"  # Wait for the light to be off for the specified time

@@ -35,6 +35,11 @@ trigger:
   - platform: state
     entity_id: !input 'binary_sensor'
     to: "on"
+  - platform: state
+    entity_id: !input 'light_entity'
+    to: "off"
+    for:
+      minutes: "{{ off_state_duration }}"  # Light has been off for the specified duration (in minutes)
 
 condition:
   - condition: template
@@ -87,20 +92,6 @@ action:
           - service: light.turn_off
             target:
               entity_id: !input 'light_entity'
-
-  # Re-enable automation if the light has been off for the specified duration
-  - alias: Turn automation back on if light is off for specified duration
-    trigger:
-      - platform: state
-        entity_id: !input 'light_entity'
-        to: "off"
-        for: "{{ off_state_duration * 60 }}"  # Light has been off for specified duration (in seconds)
-    condition:
-      - condition: template
-        value_template: "{{ automation_enabled == false }}"
-    action:
-      - variables:
-          automation_enabled: true  # Re-enable automation
 
   # Reset the toggle count if no motion is detected within the reset timer period
   - alias: Reset toggle count if no action after reset time

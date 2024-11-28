@@ -61,4 +61,83 @@ action:
     target:
       entity_id: !input 'reset_timer'  # Start the main reset timer
 
-  - service: input_numbe
+  - service: input_number.set_value
+    target:
+      entity_id: !input 'toggle_count_helper'
+    data:
+      value: 0  # Reset the toggle count
+  
+  - service: timer.start
+    target:
+      entity_id: !input 'light_off_timer'  # Start the 5-minute light-off timer
+  
+  # Monitor the light toggle and count how many times it's toggled
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input 'light_entity'
+            state: "off"
+        sequence:
+          - service: input_number.increment
+            target:
+              entity_id: !input 'toggle_count_helper'
+          
+          - service: timer.start
+            target:
+              entity_id: !input 'reset_timer'  # Reset the timer
+
+          - service: timer.start
+            target:
+              entity_id: !input 'light_off_timer'  # Restart the 5-minute off timer
+          
+      - conditions:
+          - condition: state
+            entity_id: !input 'light_entity'
+            state: "on"
+          - condition: numeric_state
+            entity_id: !input 'toggle_count_helper'
+            above: 0
+          - condition: state
+            entity_id: !input 'reset_timer'
+            state: "active"
+        sequence:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: !input 'automation_enabled_helper'  # Disable the automation for 2 hours
+          - service: input_number.set_value
+            target:
+              entity_id: !input 'toggle_count_helper'
+            data:
+              value: 0  # Reset the toggle count
+          - delay: "02:00:00"  # Wait for 2 hours
+          - service: input_boolean.turn_on
+            target:
+              entity_id: !input 'automation_enabled_helper'  # Re-enable automation
+
+  # Reset the toggle count if the reset timer expires (after 2 minutes)
+  - alias: Reset toggle count if no action after 2 minutes
+    trigger:
+      - platform: state
+        entity_id: !input 'reset_timer'
+        to: "idle"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: !input 'toggle_count_helper'
+        data:
+          value: 0  # Reset toggle count
+
+  # Turn automation back on if the light is off for 5 minutes
+  - alias: Turn automation back on if light is off for 5 minutes
+    trigger:
+      - platform: state
+        entity_id: !input 'light_off_timer'
+        to: "idle"  # When the light-off timer expires (5 minutes)
+    condition:
+      - condition: state
+        entity_id: !input 'automation_enabled_helper'
+        state: "off"  # Only trigger if the automation is currently off
+    action:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: !input 'automation_enabled_helper'  # Re-enable automation

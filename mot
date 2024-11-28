@@ -1,5 +1,5 @@
 blueprint:
-  name: "cMultiple Motion Sensors Control Lights (Max 5)"
+  name: "wMultiple Motion Sensors Control Lights (Max 5)"
   description: "Turn on and off multiple lights based on different motion sensors, with optional delays."
   domain: automation
   input:
@@ -33,4 +33,181 @@ blueprint:
       default: null
     motion_sensor_3:
       name: "Motion Sensor 3"
-    
+      description: "Third motion sensor (optional)."
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: false
+      default: null
+    light_3:
+      name: "Light 3"
+      description: "Third light to control (optional)."
+      selector:
+        entity:
+          domain: light
+          multiple: false
+      default: null
+    motion_sensor_4:
+      name: "Motion Sensor 4"
+      description: "Fourth motion sensor (optional)."
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: false
+      default: null
+    light_4:
+      name: "Light 4"
+      description: "Fourth light to control (optional)."
+      selector:
+        entity:
+          domain: light
+          multiple: false
+      default: null
+    motion_sensor_5:
+      name: "Motion Sensor 5"
+      description: "Fifth motion sensor (optional)."
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: false
+      default: null
+    light_5:
+      name: "Light 5"
+      description: "Fifth light to control (optional)."
+      selector:
+        entity:
+          domain: light
+          multiple: false
+      default: null
+    delay_off:
+      name: "Delay Off (seconds)"
+      description: "How long to keep the light on after motion is no longer detected."
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 600
+          unit_of_measurement: "seconds"
+          step: 1
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensor_1
+    to: 'on'
+  - platform: state
+    entity_id: !input motion_sensor_2
+    to: 'on'
+  - platform: state
+    entity_id: !input motion_sensor_3
+    to: 'on'
+  - platform: state
+    entity_id: !input motion_sensor_4
+    to: 'on'
+  - platform: state
+    entity_id: !input motion_sensor_5
+    to: 'on'
+
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_1
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input light_1
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_2
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input light_2
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_3
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input light_3
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_4
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input light_4
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_5
+            state: 'on'
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input light_5
+
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input motion_sensor_1
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensor_2
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensor_3
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensor_4
+        to: 'off'
+      - platform: state
+        entity_id: !input motion_sensor_5
+        to: 'off'
+    timeout: '00:{{ input.delay_off }}:00'
+
+  - delay: '00:{{ input.delay_off }}:00'
+
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_1
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input light_1
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_2
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input light_2
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_3
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input light_3
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_4
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input light_4
+      - conditions:
+          - condition: state
+            entity_id: !input motion_sensor_5
+            state: 'off'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input light_5

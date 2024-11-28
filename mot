@@ -1,5 +1,5 @@
 blueprint:
-  name: Binary Sensor with Multiple Lights Control and Toggle Logic (No Helpers with Custom Times)
+  name: 1 Binary Sensor with Multiple Lights Control and Toggle Logic (No Helpers with Custom Times)
   description: |
     Turns on multiple lights when the binary sensor detects motion, disables the automation if any of the lights is toggled off and on twice within a short time,
     and re-enables it if any of the lights has been off for a configurable amount of time. This version allows you to set the reset time and the light-off duration without helpers, and does not use a timer.

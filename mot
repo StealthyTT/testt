@@ -1,8 +1,8 @@
 blueprint:
-  name: Binary Sensor with Light Control and Toggle Logic (No Helpers with Custom Times)
+  name: Binary Sensor with Multiple Lights Control and Toggle Logic (No Helpers with Custom Times)
   description: |
-    Turns on the light when the binary sensor detects motion, disables the automation if the light is toggled off and on twice within a short time,
-    and re-enables it if the light has been off for a configurable amount of time. This version allows you to set the reset time and the light-off duration without helpers.
+    Turns on multiple lights when the binary sensor detects motion, disables the automation if any of the lights is toggled off and on twice within a short time,
+    and re-enables it if any of the lights has been off for a configurable amount of time. This version allows you to set the reset time and the light-off duration without helpers, and does not use a timer.
   domain: automation
   input:
     binary_sensor:
@@ -11,18 +11,13 @@ blueprint:
       selector:
         entity:
           domain: binary_sensor
-    light_entity:
-      name: Light
-      description: The light to control.
+    light_entities:
+      name: Light Entities
+      description: The lights to control.
       selector:
-        entity:
-          domain: light
-    motion_reset_timer:
-      name: Motion Reset Timer
-      description: Timer to reset toggle count after inactivity.
-      selector:
-        entity:
-          domain: timer
+        target:
+          entity:
+            domain: light
     reset_time_duration:
       name: Reset Time Duration
       description: Time in minutes to wait before re-enabling the automation after it has been toggled off twice.
@@ -45,7 +40,6 @@ blueprint:
 variables:
   toggle_count: 0
   automation_enabled: true
-  light_off_for_5min: false
   reset_time_duration: "{{ reset_time_duration }}"  # Duration in minutes (set by user)
   off_state_duration: "{{ off_state_duration }}"  # Duration in minutes (set by user)
 
@@ -55,7 +49,7 @@ trigger:
     entity_id: !input 'binary_sensor'
     to: "on"
   - platform: state
-    entity_id: !input 'light_entity'
+    entity_id: !input 'light_entities'
     to: "off"
     for:
       minutes: "{{ off_state_duration }}"  # Light has been off for the specified duration (in minutes)
@@ -67,34 +61,30 @@ condition:
 
 # Actions (responding to triggers)
 action:
-  # Action triggered by motion detection (light turns on)
+  # Action triggered by motion detection (turns on multiple lights)
   - choose:
       - conditions:
           - condition: state
             entity_id: !input 'binary_sensor'
             state: "on"
         sequence:
+          # Loop through the list of lights and turn them on
           - service: light.turn_on
             target:
-              entity_id: !input 'light_entity'
+              entity_id: "{{ light_entity }}"
+            data: {}
           - variables:
               toggle_count: 0  # Reset toggle count when motion is detected
-          - service: timer.start
-            target:
-              entity_id: !input 'motion_reset_timer'  # Start/reset the motion reset timer
 
-  # Action triggered when the light turns off (track toggles)
+  # Action triggered when any of the lights turns off (track toggles)
   - choose:
       - conditions:
           - condition: state
-            entity_id: !input 'light_entity'
+            entity_id: !input 'light_entities'
             state: "off"
         sequence:
           - variables:
-              toggle_count: "{{ toggle_count + 1 }}"  # Increment toggle count when light turns off
-          - service: timer.start
-            target:
-              entity_id: !input 'motion_reset_timer'  # Reset the timer
+              toggle_count: "{{ toggle_count + 1 }}"  # Increment toggle count when any light turns off
           - choose:
               # If toggled off and on twice, disable automation
               - conditions:
@@ -107,7 +97,16 @@ action:
                   - variables:
                       automation_enabled: true  # Re-enable automation
 
-  # Reset toggle count after inactivity (reset after the timer is idle)
-  - service: timer.start
-    target:
-      entity_id: !input 'motion_reset_timer'
+  # Reset toggle count after inactivity (reset after the light has been off)
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input 'light_entities'
+            state: "off"
+            for:
+              minutes: "{{ off_state_duration }}"  # Wait for the light to be off for the specified time
+        sequence:
+          - variables:
+              toggle_count: 0  # Reset toggle count when the light has been off for the duration
+          - variables:
+              automation_enabled: true  # Re-enable automation after the light has been off for the specified duration

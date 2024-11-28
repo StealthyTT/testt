@@ -46,19 +46,24 @@ condition:
     value_template: "{{ automation_enabled == true }}"  # Only proceed if automation is enabled
 
 action:
-  - service: light.turn_on
-    target:
-      entity_id: !input 'light_entity'
-  
-  - variables:
-      toggle_count: 0  # Reset the toggle count when motion is detected
-      light_off_for_5min: false  # Reset the light off timer status
-  
-  - service: timer.start
-    target:
-      entity_id: !input 'motion_reset_timer'  # Start/reset the motion reset timer
+  # Action triggered by motion sensor detecting motion
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input 'binary_sensor'
+            state: "on"
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input 'light_entity'
+          - variables:
+              toggle_count: 0  # Reset toggle count when motion is detected
+              light_off_for_5min: false  # Reset the light off timer status
+          - service: timer.start
+            target:
+              entity_id: !input 'motion_reset_timer'  # Start/reset the motion reset timer
 
-  # Monitor the light toggle and count how many times it's toggled
+  # Action when the light turns off to track the toggles
   - choose:
       - conditions:
           - condition: state
@@ -67,11 +72,9 @@ action:
         sequence:
           - variables:
               toggle_count: "{{ toggle_count + 1 }}"
-          
           - service: timer.start
             target:
               entity_id: !input 'motion_reset_timer'  # Reset the timer
-
           - if:
               condition: template
               value_template: "{{ toggle_count >= 2 }}"  # If toggled off and on twice
@@ -81,17 +84,6 @@ action:
               - delay: "{{ reset_time_duration * 60 }}"  # Wait for the reset time in seconds
               - variables:
                   automation_enabled: true  # Re-enable automation
-
-      - conditions:
-          - condition: state
-            entity_id: !input 'light_entity'
-            state: "on"
-          - condition: template
-            value_template: "{{ toggle_count > 0 }}"
-        sequence:
-          - service: light.turn_off
-            target:
-              entity_id: !input 'light_entity'
 
   # Reset the toggle count if no motion is detected within the reset timer period
   - alias: Reset toggle count if no action after reset time

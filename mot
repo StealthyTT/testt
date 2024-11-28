@@ -69,44 +69,14 @@ action:
             state: "on"
         sequence:
           # Loop through the list of lights and turn them on
-          - service: light.turn_on
-            target:
-              entity_id: "{{ light_entity }}"
-            data: {}
+          - repeat:
+              count: "{{ light_entities | length }}"
+              sequence:
+                - service: light.turn_on
+                  target:
+                    entity_id: "{{ light_entities[count] }}"
+                  data: {}
           - variables:
               toggle_count: 0  # Reset toggle count when motion is detected
 
-  # Action triggered when any of the lights turns off (track toggles)
-  - choose:
-      - conditions:
-          - condition: state
-            entity_id: "{{ entity }}"
-            state: "off"
-        sequence:
-          - variables:
-              toggle_count: "{{ toggle_count + 1 }}"  # Increment toggle count when any light turns off
-          - choose:
-              # If toggled off and on twice, disable automation
-              - conditions:
-                  - condition: template
-                    value_template: "{{ toggle_count >= 2 }}"
-                sequence:
-                  - variables:
-                      automation_enabled: false  # Disable automation
-                  - delay: "{{ reset_time_duration * 60 }}"  # Wait for reset time in seconds
-                  - variables:
-                      automation_enabled: true  # Re-enable automation
-
-  # Reset toggle count after inactivity (reset after the light has been off)
-  - choose:
-      - conditions:
-          - condition: state
-            entity_id: "{{ light_entity }}"
-            state: "off"
-            for:
-              minutes: "{{ off_state_duration }}"  # Wait for the light to be off for the specified time
-        sequence:
-          - variables:
-              toggle_count: 0  # Reset toggle count when the light has been off for the duration
-          - variables:
-              automation_enabled: true  # Re-enable automation after the light has been off for the specified duration
+  

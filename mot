@@ -1,7 +1,7 @@
 blueprint:
-  name: Binary Sensor with Zone and Light Control
+  name: Binary Sensor with Light Control and Toggle Logic
   description: |
-    Turns on the light when the binary sensor detects a change in state inside a specified zone, disables the automation if the light is toggled off and on within a short time,
+    Turns on the light when the binary sensor detects a state change, disables the automation if the light is toggled off and on within a short time,
     and re-enables it if the light has been off for 5 minutes.
   domain: automation
   input:
@@ -41,29 +41,16 @@ blueprint:
       selector:
         entity:
           domain: timer
-    motion_zone:
-      name: Motion Zone
-      description: The zone where the binary sensor must be located to trigger the automation.
-      selector:
-        entity:
-          domain: zone
 
 trigger:
   - platform: state
     entity_id: !input 'binary_sensor'
-    to: "on"
-  - platform: state
-    entity_id: !input 'motion_zone'
     to: "on"
 
 condition:
   - condition: state
     entity_id: !input 'automation_enabled_helper'
     state: "on"  # Only proceed if automation is enabled
-  - condition: zone
-    entity_id: !input 'binary_sensor'
-    zone: !input 'motion_zone'
-    # Trigger only if the binary sensor is in the specified zone
 
 action:
   - service: light.turn_on
@@ -74,29 +61,4 @@ action:
     target:
       entity_id: !input 'reset_timer'  # Start the main reset timer
 
-  - service: input_number.set_value
-    target:
-      entity_id: !input 'toggle_count_helper'
-    data:
-      value: 0  # Reset the toggle count
-  
-  - service: timer.start
-    target:
-      entity_id: !input 'light_off_timer'  # Start the 5-minute light-off timer
-  
-  # Monitor the light toggle and count how many times it's toggled
-  - choose:
-      - conditions:
-          - condition: state
-            entity_id: !input 'light_entity'
-            state: "off"
-        sequence:
-          - service: input_number.increment
-            target:
-              entity_id: !input 'toggle_count_helper'
-          
-          - service: timer.start
-            target:
-              entity_id: !input 'reset_timer'  # Reset the timer
-
-          - service: ti
+  - service: input_numbe
